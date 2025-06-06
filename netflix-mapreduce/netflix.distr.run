@@ -1,0 +1,44 @@
+#!/bin/bash
+#SBATCH --job-name="netflix"
+#SBATCH --output="netflix.distr.out"
+#SBATCH --partition=compute
+#SBATCH --nodes=2
+#SBATCH --ntasks-per-node=128
+#SBATCH --mem=249208M
+#SBATCH --time=29
+
+# Load Required Modules (Customize for your HPC environment)
+module load cpu/0.15.4 gcc/7.5.0 openjdk
+
+# Set Hadoop & MyHadoop Paths
+export HADOOP_HOME=/path/to/hadoop
+export MYHADOOP_HOME=/path/to/myhadoop
+export HADOOP_CONF_DIR=/path/to/hadoop/conf
+export PATH="$HADOOP_HOME/bin:$HADOOP_HOME/sbin:$MYHADOOP_HOME/bin:$PATH"
+
+# Configure Hadoop Cluster with MyHadoop
+myhadoop-configure.sh -s /scratch/$USER/job_$SLURM_JOBID -i "s/$/.ib.cluster/"
+cp $HADOOP_CONF_DIR/slaves $HADOOP_CONF_DIR/workers
+
+#Start Hadoop Cluster
+start-dfs.sh
+start-yarn.sh
+
+# Prepare Input and Output Paths in HDFS
+hdfs dfs -mkdir -p /user/$USER/
+hdfs dfs -rm -r -f /user/$USER/output1
+hdfs dfs -rm -r -f /user/$USER/output2
+hdfs dfs -put /path/to/ratings.txt /user/$USER/
+
+# Run Distributed MapReduce Job
+hadoop jar netflix.jar Netflix /user/$USER/ratings.txt /user/$USER/output1 /user/$USER/output2
+
+# Merge and Retrieve Results Locally
+rm -f large-output1.txt large-output2.txt
+hdfs dfs -getmerge /user/$USER/output1 large-output1.txt
+hdfs dfs -getmerge /user/$USER/output2 large-output2.txt
+
+# Stop Hadoop Cluster 
+stop-yarn.sh
+stop-dfs.sh
+myhadoop-cleanup.sh

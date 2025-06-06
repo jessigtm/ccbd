@@ -1,0 +1,30 @@
+#!/bin/bash
+#SBATCH --job-name="netflix.local"
+#SBATCH --output="netflix.local.out"
+#SBATCH --partition=shared
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=4
+#SBATCH --mem=16G
+#SBATCH --time=10
+
+# Load Required Modules
+module load cpu/0.15.4 gcc/7.5.0 openjdk hadoop/3.2.2
+
+# Define Paths
+INPUT_FILE=small-netflix.txt
+OUTPUT1=output1
+OUTPUT2=output2
+JAR_FILE=netflix.jar
+
+# Cleanup Previous Outputs
+rm -rf $OUTPUT1 $OUTPUT2 small-output1.txt small-output2.txt
+
+# Run MapReduce Jobs Locally
+hadoop jar $JAR_FILE Netflix $INPUT_FILE $OUTPUT1 $OUTPUT2
+
+# Merge Output Parts Locally
+cat $OUTPUT1/part* > small-output1.txt
+cat $OUTPUT2/part* > small-output2.txt
+
+#Cleanup Hadoop Temp Directory
+rm -rf /tmp/hadoop
