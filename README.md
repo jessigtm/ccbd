@@ -1,2 +1,2 @@
-# ccbd
-This repository contains practical implementations of cloud computing and big data concepts, including Hadoop MapReduce and Apache Spark, with a focus on large-scale data processing and cloud-based architecture
+# Cloud Computing and Big Data
+A collection of hands-on implementations showcasing big data processing techniques using Hadoop MapReduce and Apache Spark. Emphasis is on scalable, distributed computing and foundational cloud architecture patterns.
