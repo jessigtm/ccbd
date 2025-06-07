@@ -1,0 +1,23 @@
+#!/bin/bash
+#SBATCH --job-name="netflix.local"
+#SBATCH --output="netflix.local.out"
+#SBATCH --partition=shared
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=4
+#SBATCH --mem=16G
+#SBATCH --time=10
+
+# Load required modules (modify based on environment)
+module load cpu/0.15.4 gcc/7.5.0 openjdk hadoop/3.2.2
+
+# Set paths
+export HADOOP_CONF_DIR=/path/to/hadoop/conf
+
+# Clean previous output
+rm -rf output small-output.txt
+
+# Run MapReduce locally on small input files
+hadoop --config $HADOOP_CONF_DIR jar netflix.jar Netflix small-ratings.txt small-titles.txt output
+
+# Combine output into a single file
+cp output/part* small-output.txt

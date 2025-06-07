@@ -1,0 +1,15 @@
+*
+
+!.gitignore
+!README.md
+!netflix.build
+!netflix.distr.run
+!netflix.local.run
+!src/
+!src/main/
+!src/main/java/
+!src/main/java/Netflix.java
+!small-ratings.txt
+!small-titles.txt
+!output/
+!output/part-r-00000
