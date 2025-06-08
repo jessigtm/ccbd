@@ -1,0 +1,11 @@
+*
+
+!.gitignore
+!README.md
+!netflix.py
+!netflix.distr.run
+!netflix.local.run
+!small-ratings.txt
+!small-titles.txt
+!output/
+!output/part-r-00000

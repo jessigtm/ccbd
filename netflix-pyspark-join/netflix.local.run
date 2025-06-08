@@ -1,0 +1,28 @@
+#!/bin/bash
+#SBATCH -A uot199
+#SBATCH --job-name="netflix.local"
+#SBATCH --output="netflix.local.out"
+#SBATCH --partition=shared
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=2
+#SBATCH --export=ALL 
+#SBATCH --time=10
+
+# Load necessary modules
+module load cpu/0.15.4 gcc/7.5.0 python3 hadoop/3.2.2 spark
+
+# Set up and activate virtual environment
+export PYTHON_ENV="$HOME/venv"
+python3 -m venv $PYTHON_ENV
+source "$PYTHON_ENV/bin/activate"
+pip install --upgrade pip
+pip install pyspark
+
+# Clean previous output
+rm -rf output small-output.txt
+
+# Run Spark job locally using 2 threads
+spark-submit --master local[2] netflix.py small-ratings.txt small-titles.txt output
+
+# Merge Spark output into a single file
+cat output/part* > small-output.txt
