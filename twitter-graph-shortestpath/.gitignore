@@ -1,0 +1,15 @@
+*
+
+!.gitignore
+!README.md
+!graph.build
+!graph.distr.run
+!graph.local.run
+!src/
+!src/main/
+!src/main/java/
+!src/main/java/Graph.java
+!small-graph.csv
+!small-solution.txt
+!output/
+!output/part-r-00000

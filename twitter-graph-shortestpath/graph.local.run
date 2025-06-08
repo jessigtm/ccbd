@@ -1,0 +1,29 @@
+#!/bin/bash
+#SBATCH --job-name="graph.local"
+#SBATCH --output="graph.local.out"
+#SBATCH --partition=compute
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=4
+#SBATCH --mem=16G
+#SBATCH --time=20
+
+# Load environment modules
+module load cpu/0.15.4 gcc/7.5.0 openjdk hadoop/3.2.2
+
+# Set temporary directory for Hadoop
+export TMPDIR=$HOME/tmp
+
+# Define Hadoop config location
+export HADOOP_CONF_DIR=/path/to/hadoop/conf
+
+# Clean previous outputs
+rm -rf intermediate output
+
+# Run the local SSSP MapReduce job
+hadoop --config $HADOOP_CONF_DIR jar graph.jar Graph small-graph.csv intermediate output
+
+# Save the output as a single file
+cp output/part* small-output.txt
+
+# Clean up Hadoop temp directory
+rm -rf /tmp/hadoop

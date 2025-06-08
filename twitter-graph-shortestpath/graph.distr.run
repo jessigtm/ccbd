@@ -1,0 +1,41 @@
+#!/bin/bash
+#SBATCH --job-name="graph"
+#SBATCH --output="graph.distr.out"
+#SBATCH --partition=compute
+#SBATCH --nodes=2
+#SBATCH --ntasks-per-node=128
+#SBATCH --mem=249208M
+#SBATCH --time=29
+
+# Load Required Modules
+module load cpu/0.15.4 gcc/7.5.0 openjdk
+
+# Configure Hadoop Environment 
+export HADOOP_HOME=/path/to/hadoop
+export MYHADOOP_HOME=/path/to/myhadoop
+export HADOOP_CONF_DIR=/path/to/hadoop/conf
+export PATH="$HADOOP_HOME/bin:$HADOOP_HOME/sbin:$MYHADOOP_HOME/bin:$PATH"
+
+# Configure MyHadoop
+myhadoop-configure.sh -s /scratch/$USER/job_$SLURM_JOBID -i "s/$/.ib.cluster/"
+cp $HADOOP_CONF_DIR/slaves $HADOOP_CONF_DIR/workers
+
+# Start HDFS and YARN 
+start-dfs.sh
+start-yarn.sh
+
+# Load Graph Data to HDFS 
+hdfs dfs -mkdir -p /user/$USER
+hdfs dfs -put /path/to/large-twitter.csv /user/$USER/large-graph.csv
+
+# Run SSSP MapReduce Job 
+hadoop jar graph.jar Graph /user/$USER/large-graph.csv /user/$USER/intermediate /user/$USER/output
+
+# Retrieve Final Output 
+rm -rf large-output.txt
+hdfs dfs -getmerge /user/$USER/output large-output.txt
+
+# Shutdown 
+stop-yarn.sh
+stop-dfs.sh
+myhadoop-cleanup.sh
