@@ -1,0 +1,30 @@
+#!/bin/bash
+#SBATCH -A your_project_code
+#SBATCH --job-name="netflix.local"
+#SBATCH --output="netflix.local.out"
+#SBATCH --partition=shared
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=4
+#SBATCH --mem=16G
+#SBATCH --export=ALL
+#SBATCH --time=10
+
+# Load Python module
+module load python3
+
+# Set up virtual environment
+export PYTHON_ENV="$HOME/venv"
+python3 -m venv "$PYTHON_ENV"
+source "$PYTHON_ENV/bin/activate"
+
+# Install dependencies
+python3 -m pip install --upgrade pip
+pip install -U "ray[default]"
+pip install pandas
+pip install pyarrow
+
+# Start Ray cluster in head mode
+ray start --head --port=6379
+
+# Run the main Python script with small example inputs
+ip_head="localhost:6379" python3 netflix.py small-ratings.txt small-titles.txt
