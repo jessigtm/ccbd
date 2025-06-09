@@ -1,0 +1,63 @@
+#!/bin/bash
+#SBATCH -A <your_allocation_id>
+#SBATCH --job-name="netflix"
+#SBATCH --output="netflix.distr.out"
+#SBATCH --partition=compute
+#SBATCH --nodes=2
+#SBATCH --ntasks-per-node=128
+#SBATCH --mem=249208M
+#SBATCH --export=ALL 
+#SBATCH --time=29
+
+# Set Hadoop configuration directory
+export HADOOP_CONF_DIR=/home/$USER/your-hadoop-config-dir
+
+# Load necessary modules
+module load cpu/<version> gcc/<version> python3 hadoop/<version> spark
+
+# Set software/data directory
+SW=/your/path/to/netflix-data
+
+# Set up Python virtual environment
+export PYTHON_ENV="$HOME/venv"
+python3 -m venv $PYTHON_ENV
+source "$PYTHON_ENV/bin/activate"
+python3 -m pip install --upgrade pip
+pip3 install pyspark
+
+# Set scratch directory
+scratch=/scratch/$USER/job_$SLURM_JOB_ID
+
+# Configure MyHadoop
+myhadoop-configure.sh -s $scratch -i "s/$/.ib.cluster/"
+
+# Sync slaves to workers (Spark requirement)
+cp $HADOOP_CONF_DIR/slaves $HADOOP_CONF_DIR/workers
+
+# Set Spark environment variables
+SPARK_ENV=$HADOOP_CONF_DIR/spark/spark-env.sh
+echo "export TMP=$scratch/tmp" >> $SPARK_ENV
+echo "export TMPDIR=$scratch/tmp" >> $SPARK_ENV
+echo "export SPARK_LOCAL_DIRS=$scratch" >> $SPARK_ENV
+source $SPARK_ENV
+
+# Set Spark master host
+export SPARK_MASTER_HOST=$SPARK_MASTER_IP
+
+# Spark job options
+SPARK_OPTIONS="--driver-memory 24G --num-executors 8 --executor-cores 12 --executor-memory 24G --supervise"
+
+# Start HDFS and Spark services
+start-dfs.sh
+myspark start
+
+# Upload data to HDFS
+hdfs dfs -mkdir -p /user/$USER
+hdfs dfs -put $SW/netflix/ratings.txt /user/$USER/
+hdfs dfs -put $SW/netflix/movie_titles.csv /user/$USER/
+
+# Run Spark job
+spark-submit --master $MASTER $SPARK_OPTIONS netflix.py /user/$USER/ratings.txt /user/$USER/movie_titles.csv
+
+# Clean up
+myhadoop-cleanup.sh
