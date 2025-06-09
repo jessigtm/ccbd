@@ -1,0 +1,20 @@
+#!/bin/bash
+#SBATCH -A uot199
+#SBATCH --job-name="graph.local"
+#SBATCH --output="graph.local.out"
+#SBATCH --partition=shared
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=4
+#SBATCH --mem=16G
+#SBATCH --export=ALL 
+#SBATCH --time=10
+
+module load cpu/0.15.4 gcc/7.5.0 python3 hadoop/3.2.2 spark
+
+export PYTHON_ENV="$HOME/venv"
+python3 -m venv $PYTHON_ENV
+source "$PYTHON_ENV/bin/activate"
+python3 -m pip install --upgrade pip
+pip3 install pyspark
+
+spark-submit --master local[2] graph.py small-graph.csv

@@ -1,0 +1,54 @@
+#!/bin/bash
+#SBATCH -A <project_id>
+#SBATCH --job-name="graph"
+#SBATCH --output="graph.distr.out"
+#SBATCH --partition=compute
+#SBATCH --nodes=2
+#SBATCH --ntasks-per-node=128
+#SBATCH --mem=249208M
+#SBATCH --export=ALL 
+#SBATCH --time=29
+
+# Set your environment paths
+export HADOOP_CONF_DIR=/path/to/hadoop/conf
+module load cpu gcc openjdk python3 hadoop spark
+
+# Set working directory 
+SCRATCH_DIR=/scratch/$USER/job_$SLURM_JOB_ID
+
+# Optional virtual environment setup 
+PYTHON_ENV="$HOME/venv"
+python3 -m venv $PYTHON_ENV
+source "$PYTHON_ENV/bin/activate"
+pip install --upgrade pip
+pip install pyspark
+
+# Configure Hadoop/Spark cluster
+myhadoop-configure.sh -s $SCRATCH_DIR -i "s/$/.ib.cluster/"
+cp $HADOOP_CONF_DIR/slaves $HADOOP_CONF_DIR/workers
+
+# Set Spark environment
+SPARK_ENV=$HADOOP_CONF_DIR/spark/spark-env.sh
+echo "export TMP=$SCRATCH_DIR/tmp" >> $SPARK_ENV
+echo "export TMPDIR=$SCRATCH_DIR/tmp" >> $SPARK_ENV
+echo "export SPARK_LOCAL_DIRS=$SCRATCH_DIR" >> $SPARK_ENV
+source $SPARK_ENV
+
+# Optional: export master IP if needed
+export SPARK_MASTER_HOST=$SPARK_MASTER_IP
+
+SPARK_OPTIONS="--driver-memory 24G --num-executors 8 --executor-cores 12 --executor-memory 24G --supervise"
+
+# Start Hadoop and Spark
+start-dfs.sh
+myspark start
+
+# HDFS operations
+hdfs dfs -mkdir -p /user/$USER
+hdfs dfs -put ./large-twitter.csv /user/$USER/large-graph.csv
+
+# Run the Spark job
+spark-submit --master $MASTER $SPARK_OPTIONS graph.py /user/$USER/large-graph.csv
+
+# Clean up
+myhadoop-cleanup.sh
